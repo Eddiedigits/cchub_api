@@ -7,7 +7,7 @@ from configparser import ConfigParser
 from requests import Request, Session, RequestException
 from requests.adapters import HTTPAdapter
 
-class CchubApiClient:
+class CchubApiBaseClient:
     '''basic class to act as a client for the CCHUB Api
     it is expected that this Class will be extended with business logic
     for middleware purposes
@@ -90,7 +90,7 @@ class CchubApiClient:
         return self._make_request('GET', endpoint, params=params)
 
 # Example interpreter usage:
-# file = open('cchub_api_client.py')
+# file = open('cchub_api_base_client.py')
 # exec(file.read())
 if __name__ == "__main__":
     from pprint import PrettyPrinter
@@ -101,4 +101,4 @@ if __name__ == "__main__":
     version = config['API']['VERSION']
     access_token = config['API']['ACCESS_TOKEN']
 
-    ccapi = CchubApiClient(base_url, version, access_token)
+    ccapi = CchubApiBaseClient(base_url, version, access_token)
