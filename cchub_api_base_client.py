@@ -43,6 +43,7 @@ class CchubApiBaseClient:
         self.session = Session()
         adapter = HTTPAdapter(max_retries=3)
         self.session.mount(self.base_url, adapter)
+        self.session.headers["Content-Type"]= "application/json"
         self.timeout = 10
 
     def _auth(self, params=None):
@@ -53,18 +54,19 @@ class CchubApiBaseClient:
             params = {'accessToken': self.access_token}
         return params
     
-    def _make_request(self, method, endpoint, params=None, data=None):
+    def _make_request(self, method, endpoint, params=None, data=None, json=None):
         url = f'{self.base_url}{endpoint}'
         req = Request(
             method,
             url,
             params=self._auth(params),
-            data=data)
+            data=data,
+            json=json)
         prepped = req.prepare()
         
         try:
             response = self.session.send(prepped, timeout=self.timeout)
-            response.raise_for_status()  # Raise an exception for HTTP errors
+            # response.raise_for_status()  # Raise an exception for HTTP errors
             return response
         except RequestException as error:
             print(f"Error fetching data from the API: {error}")
@@ -73,11 +75,11 @@ class CchubApiBaseClient:
     def get(self, endpoint, params=None):
         return self._make_request('GET', endpoint, params=params)
 
-    def post(self, endpoint, data=None):
-        return self._make_request('POST', endpoint, data=data)
+    def post(self, endpoint, data=None, json=None):
+        return self._make_request('POST', endpoint, data=data, json=json)
 
-    def put(self, endpoint, data=None):
-        return self._make_request('PUT', endpoint, data=data)
+    def put(self, endpoint, data=None, json=None):
+        return self._make_request('PUT', endpoint, data=data, json=json)
 
     def delete(self, endpoint):
         return self._make_request('DELETE', endpoint)
