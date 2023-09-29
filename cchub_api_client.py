@@ -3,8 +3,9 @@
 # https://{SERVER_ADDRESS}/api/v{VERSION}/{MODEL}/{NAME}.json?accessToken={ACCESS_TOKEN}&{OPTIONAL_PARAMS}
 # Date Format: "yyyy-mm-dd hh:mm:ss", for example "2019-05-23 14:22:59"
 
-from requests import Request, Session, RequestException
 from configparser import ConfigParser
+from requests import Request, Session, RequestException
+from requests.adapters import HTTPAdapter
 
 class CchubApiClient:
     '''basic class to act as a client for the CCHUB Api
@@ -35,11 +36,14 @@ class CchubApiClient:
 
     }
     '''
-    def __init__(self, server_address, version, token):
+    def __init__(self, server_address, api_version, token):
         self.base_url = f'{server_address}'
-        self.version_url = f'/api/v{version}'
+        self.version_url = f'/api/v{api_version}'
         self.access_token = token
         self.session = Session()
+        adapter = HTTPAdapter(max_retries=3)
+        self.session.mount(self.base_url, adapter)
+        self.timeout = 10
 
     def _auth(self, params=None):
         '''add access token to params variable'''
@@ -50,7 +54,6 @@ class CchubApiClient:
         return params
     
     def _make_request(self, method, endpoint, params=None, data=None):
-        
         url = f'{self.base_url}{endpoint}'
         req = Request(
             method,
@@ -60,9 +63,9 @@ class CchubApiClient:
         prepped = req.prepare()
         
         try:
-            response = self.session.send(prepped, timeout=10)
+            response = self.session.send(prepped, timeout=self.timeout)
             response.raise_for_status()  # Raise an exception for HTTP errors
-            return response.json()  # Assuming the API returns JSON data
+            return response
         except RequestException as error:
             print(f"Error fetching data from the API: {error}")
             return None
@@ -86,7 +89,7 @@ class CchubApiClient:
             params = {'_method': method.upper()}
         return self._make_request('GET', endpoint, params=params)
 
-# Example usage:
+# Example interpreter usage:
 # file = open('cchub_api_client.py')
 # exec(file.read())
 if __name__ == "__main__":
@@ -99,16 +102,3 @@ if __name__ == "__main__":
     access_token = config['API']['ACCESS_TOKEN']
 
     ccapi = CchubApiClient(base_url, version, access_token)
-
-    # # Example dynamic endpoint access:
-    # customers_data = api_client.get('customers')
-    # orders_data = api_client.get('orders')
-    # # You can use api_client.post(), api_client.put(), and api_client.delete() similarly.
-
-    # if customers_data:
-    #     for customer in customers_data:
-    #         print(customer)
-
-    # if orders_data:
-    #     for order in orders_data:
-    #         print(order)
