@@ -36,10 +36,10 @@ class CchubApiBaseClient:
 
     }
     '''
-    def __init__(self, server_address, api_version, token):
+    def __init__(self, server_address, token, api_version='6'):
         self.base_url = f'{server_address}'
-        self.version_url = f'/api/v{api_version}'
         self.access_token = token
+        self.version_url = f'/api/v{api_version}'
         self.session = Session()
         adapter = HTTPAdapter(max_retries=3)
         self.session.mount(self.base_url, adapter)
@@ -103,4 +103,4 @@ if __name__ == "__main__":
     version = config['API']['VERSION']
     access_token = config['API']['ACCESS_TOKEN']
 
-    ccapi = CchubApiBaseClient(base_url, version, access_token)
+    ccapi = CchubApiBaseClient(base_url, access_token, version)
