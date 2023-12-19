@@ -199,7 +199,7 @@ class CchubApiBaseClient:
             params = {'_method': method.upper()}
         return self._make_request('GET', endpoint, params=params, **kwargs)
     
-    def get_all(self, model, params=None, **kwargs):
+    def get_all(self, model, **kwargs):
         """
         Retrieve data from an API with paging support.
 
@@ -227,6 +227,7 @@ class CchubApiBaseClient:
             raise Exception(f'no method for {do}')
 
         # Loop until all pages have been retrieved
+        params = kwargs.get('params', None)
         while True:
             # Set the page parameter in the request if provided
             if params is None:
@@ -235,7 +236,7 @@ class CchubApiBaseClient:
             params['take'] = 100
 
             # Make the API request
-            response = method(params=params, **kwargs)
+            response = method(**kwargs)
 
             # Check for errors
             if response.status_code != 200:
