@@ -7,6 +7,7 @@ from configparser import ConfigParser
 from requests import Request, Session, RequestException
 from requests.adapters import HTTPAdapter
 from functools import partialmethod
+from php import Php
 
 def set_model_method(cls):
     verbs = ['get', 'post', 'put', 'delete']
@@ -162,13 +163,19 @@ class CchubApiBaseClient:
     
     def _make_request(self, method, endpoint, **kwargs):
         # prep vars
-        url = f'{self.base_url}{endpoint}'
         params = kwargs.get('params', None)
+        try:
+            del kwargs['params']
+        except KeyError:
+            pass
+        params=self._auth(params)
+        param_string = Php.http_build_query(params)
+        url = f'{self.base_url}{endpoint}?{param_string}'
         # prep request
         req = Request(
             method,
             url,
-            params=self._auth(params),
+            # params=self._auth(params),
             **kwargs)
         prepped = req.prepare()
         
@@ -199,7 +206,7 @@ class CchubApiBaseClient:
             params = {'_method': method.upper()}
         return self._make_request('GET', endpoint, params=params, **kwargs)
     
-    def get_all(self, model, params=None, **kwargs):
+    def get_all(self, model, **kwargs):
         """
         Retrieve data from an API with paging support.
 
@@ -229,13 +236,15 @@ class CchubApiBaseClient:
         # Loop until all pages have been retrieved
         while True:
             # Set the page parameter in the request if provided
-            if params is None:
+            try:
+                params = kwargs['params']
+            except KeyError:
                 params = {}
             params['skip'] = position
             params['take'] = 100
 
             # Make the API request
-            response = method(params=params, **kwargs)
+            response = method(params=params)
 
             # Check for errors
             if response.status_code != 200:
