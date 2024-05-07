@@ -9,19 +9,61 @@ from requests.adapters import HTTPAdapter
 from functools import partialmethod
 
 def set_model_method(cls):
+    models = [
+        'activities',
+        'activitiesCall',
+        'activitiesEmail',
+        'activitiesWeb',
+        'activitiesSms',
+        'activitiesFbm',
+        'activitiesIgdm',
+        'activitiesWap',
+        'activitiesVbr',
+        'accounts',
+        'contacts',
+        'crmRecords',
+        'campaignsRecords',
+        'campaignsTypes',
+        'groups',
+        'pauses',
+        'queues',
+        'statuses',
+        'templates',
+        'tickets',
+        'users',]
     verbs = ['get', 'post', 'put', 'delete']
-    for model in cls.models:
+    for model in models:
         for verb in verbs:
             func_name = f'{verb}_{model}'
             setattr(cls, func_name, partialmethod(cls.model_func, model, verb, ))
-    return cls
 
-def set_get_all_method(cls):
-    for model in cls.models:
-        setattr(cls, f'get_all_{model}', partialmethod(cls.get_all, model))
-    return cls
+# def set_get_all_method(cls):
+#     models = [
+#         'activities',
+#         'activitiesCall',
+#         'activitiesEmail',
+#         'activitiesWeb',
+#         'activitiesSms',
+#         'activitiesFbm',
+#         'activitiesIgdm',
+#         'activitiesWap',
+#         'activitiesVbr',
+#         'accounts',
+#         'contacts',
+#         'crmRecords',
+#         'campaignsRecords',
+#         'campaignsTypes',
+#         'groups',
+#         'pauses',
+#         'queues',
+#         'statuses',
+#         'templates',
+#         'tickets',
+#         'users',]
+#     for model in models:
+#         setattr(cls, f'get_all_{model}', partialmethod(cls.get_all, model))
 
-@set_get_all_method
+# @set_get_all_method
 @set_model_method
 class CchubApiBaseClient:
     '''basic class to act as a client for the CCHUB Api
@@ -130,9 +172,6 @@ class CchubApiBaseClient:
 
     def model_func(self, model, verb, *args, **kwargs):
         '''simple get request for a model'''
-        # cc.put_accounts('123', json={'customFields': {'business_name': 'test'}})
-        # cc.get_accounts('123')
-        # cc.get_accounts(params={'skip': 0, 'take': 20})
         uid = args[0] if args else None
         simulate = kwargs.pop('simulate', False)
 
@@ -164,11 +203,15 @@ class CchubApiBaseClient:
         # prep vars
         url = f'{self.base_url}{endpoint}'
         params = kwargs.get('params', None)
+        data = kwargs.get('data', None)
+        json = kwargs.get('json', None)
         # prep request
         req = Request(
             method,
             url,
             params=self._auth(params),
+            data=data,
+            json=json,
             **kwargs)
         prepped = req.prepare()
         
@@ -183,10 +226,14 @@ class CchubApiBaseClient:
     def get(self, endpoint, **kwargs):
         return self._make_request('GET', endpoint, **kwargs)
 
-    def post(self, endpoint, **kwargs):
+    def post(self, endpoint, *args, **kwargs):
+        if not kwargs.get('json', None):
+            kwargs['json']= args[0] if args & isinstance(args[0], dict) else None
         return self._make_request('POST', endpoint, **kwargs)
 
-    def put(self, endpoint, **kwargs):
+    def put(self, endpoint, *args, **kwargs):
+        if not kwargs.get('json', None):
+            kwargs['json']= args[0] if args & isinstance(args[0], dict) else None
         return self._make_request('PUT', endpoint, **kwargs)
 
     def delete(self, endpoint, **kwargs):
@@ -199,7 +246,7 @@ class CchubApiBaseClient:
             params = {'_method': method.upper()}
         return self._make_request('GET', endpoint, params=params, **kwargs)
     
-    def get_all(self, model, **kwargs):
+    def get_all(self, model, params=None, **kwargs):
         """
         Retrieve data from an API with paging support.
 
@@ -219,15 +266,12 @@ class CchubApiBaseClient:
         }
         position = 0
 
-        # find the method to use
         do = f'get_{model}'
         if hasattr(self, do) and callable(func := getattr(self, do)):
             method = func
         else:
             raise Exception(f'no method for {do}')
 
-        # Loop until all pages have been retrieved
-        params = kwargs.get('params', None)
         while True:
             # Set the page parameter in the request if provided
             if params is None:
@@ -236,19 +280,17 @@ class CchubApiBaseClient:
             params['take'] = 100
 
             # Make the API request
-            response = method(**kwargs)
+            response = method(params=params, **kwargs)
 
             # Check for errors
             if response.status_code != 200:
                 print(f"Error: Unable to retrieve data. Status code: {response.status_code}")
                 break
 
-            # Add the retrieved items to the result list
             all_data['status_code'].append(response.status_code)
             res = response.json()
             all_data['error'].append(res['error'])
             all_data['result']['data'].extend(res['result']['data'])
-            # get total from first page
             if position == 0:
                 all_data['result']['total'] = res['result']['total']
 
