@@ -1,1 +1,1 @@
-from cchub_api_base_client import CCHubAPIBaseClient
+from .cchub_api_base_client import CCHubAPIBaseClient
