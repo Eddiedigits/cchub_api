@@ -119,6 +119,7 @@ class CchubApiBaseClient:
         'statuses',
         'templates',
         'tickets',
+        'ticketsCategories',
         'users',
     ]
 
